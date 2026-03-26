@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Roles: ADMIN | PLANNER | TECHNICIAN | SUPERVISOR
+// MachineType: DIAPER | COSMETICS | PACKAGING | UTILITY
+// MachineStatus: OPERATIONAL | MAINTENANCE | STOPPED | OUT_OF_SERVICE
+// ActivityType: PREVENTIVE | CORRECTIVE | PREDICTIVE | INSPECTION
+// FrequencyType: PRODUCTION_COUNT | CALENDAR_DAYS
+// PlanStatus: SCHEDULED | IN_PROGRESS | COMPLETED | OVERDUE | CANCELLED
+// WorkOrderStatus: PENDING | ASSIGNED | IN_PROGRESS | COMPLETED_PENDING_APPROVAL | APPROVED | REJECTED | CANCELLED
+// Priority: LOW | MEDIUM | HIGH | CRITICAL
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedOrders   WorkOrder[]       @relation("TechnicianOrders")
+  supervisedOrders WorkOrder[]       @relation("SupervisorOrders")
+  createdPlans     MaintenancePlan[] @relation("PlannerPlans")
+}
+
+model Machine {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  name         String
+  type         String    // DIAPER | COSMETICS | PACKAGING | UTILITY
+  brand        String?
+  model        String?
+  serialNumber String?
+  location     String?
+  status       String    @default("OPERATIONAL")
+  installDate  DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  parts          MachinePart[]
+  productionLogs ProductionLog[]
+}
+
+model MachinePart {
+  id          String   @id @default(cuid())
+  code        String
+  name        String
+  description String?
+  machineId   String
+  parentId    String?
+  level       Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  machine               Machine               @relation(fields: [machineId], references: [id])
+  parent                MachinePart?          @relation("PartHierarchy", fields: [parentId], references: [id])
+  children              MachinePart[]         @relation("PartHierarchy")
+  maintenanceActivities MaintenanceActivity[]
+
+  @@unique([machineId, code])
+}
+
+model MaintenanceActivity {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  description    String?
+  type           String   // PREVENTIVE | CORRECTIVE | PREDICTIVE | INSPECTION
+  partId         String
+  frequencyType  String   // PRODUCTION_COUNT | CALENDAR_DAYS
+  frequencyValue Int
+  estimatedHours Float?
+  createdAt      DateTime @default(now())
+
+  part             MachinePart           @relation(fields: [partId], references: [id])
+  spareParts       ActivitySparePart[]
+  maintenancePlans MaintenancePlan[]
+  usageTracker     ActivityUsageTracker?
+}
+
+model ActivityUsageTracker {
+  id                  String    @id @default(cuid())
+  activityId          String    @unique
+  currentUsage        Int       @default(0)
+  lastResetAt         DateTime  @default(now())
+  lastMaintenanceDate DateTime?
+  updatedAt           DateTime  @updatedAt
+
+  activity MaintenanceActivity @relation(fields: [activityId], references: [id])
+}
+
+model SparePart {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  unit        String   @default("unidad")
+  stock       Int      @default(0)
+  minStock    Int      @default(1)
+  supplier    String?
+  price       Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  activityUsage  ActivitySparePart[]
+  workOrderUsage WorkOrderSparePart[]
+}
+
+model ActivitySparePart {
+  id          String @id @default(cuid())
+  activityId  String
+  sparePartId String
+  quantity    Int    @default(1)
+
+  activity  MaintenanceActivity @relation(fields: [activityId], references: [id])
+  sparePart SparePart           @relation(fields: [sparePartId], references: [id])
+
+  @@unique([activityId, sparePartId])
+}
+
+model ProductionLog {
+  id        String   @id @default(cuid())
+  machineId String
+  date      DateTime
+  quantity  Int
+  shift     String?
+  operator  String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  machine Machine @relation(fields: [machineId], references: [id])
+}
+
+model MaintenancePlan {
+  id           String   @id @default(cuid())
+  activityId   String
+  plannedDate  DateTime
+  status       String   @default("SCHEDULED")
+  plannedById  String
+  notes        String?
+  triggerUsage Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  activity  MaintenanceActivity @relation(fields: [activityId], references: [id])
+  plannedBy User                @relation("PlannerPlans", fields: [plannedById], references: [id])
+  workOrder WorkOrder?
+}
+
+model WorkOrder {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  planId          String?   @unique
+  title           String
+  type            String    // PREVENTIVE | CORRECTIVE
+  status          String    @default("PENDING")
+  priority        String    @default("MEDIUM")
+  technicianId    String?
+  supervisorId    String?
+  assignedAt      DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  supervisorNotes String?
+  technicianNotes String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  plan           MaintenancePlan?     @relation(fields: [planId], references: [id])
+  technician     User?                @relation("TechnicianOrders", fields: [technicianId], references: [id])
+  supervisor     User?                @relation("SupervisorOrders", fields: [supervisorId], references: [id])
+  checklistItems WorkOrderChecklist[]
+  spareParts     WorkOrderSparePart[]
+}
+
+model WorkOrderChecklist {
+  id          String    @id @default(cuid())
+  workOrderId String
+  step        Int
+  description String
+  completed   Boolean   @default(false)
+  notes       String?
+  completedAt DateTime?
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+}
+
+model WorkOrderSparePart {
+  id              String @id @default(cuid())
+  workOrderId     String
+  sparePartId     String
+  quantityPlanned Int    @default(1)
+  quantityUsed    Int?
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  sparePart SparePart @relation(fields: [sparePartId], references: [id])
+
+  @@unique([workOrderId, sparePartId])
+}
