@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SyncIcon         from '@mui/icons-material/Sync';
 import AddIcon          from '@mui/icons-material/Add';
 import CheckCircleIcon  from '@mui/icons-material/CheckCircle';
@@ -7,7 +7,120 @@ import FactoryIcon      from '@mui/icons-material/Factory';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import CloseIcon        from '@mui/icons-material/Close';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import SearchIcon       from '@mui/icons-material/Search';
 import { useAuth } from '../context/AuthContext';
+
+// ── Buscador de equipos ──────────────────────────────────────────────────────
+function BuscadorEquipo({ activos, value, onChange }) {
+  const [query,  setQuery]  = useState('');
+  const [abierto, setAbierto] = useState(false);
+  const ref = useRef(null);
+
+  // Cerrar al hacer clic fuera
+  useEffect(() => {
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, []);
+
+  const seleccionado = activos.find(a => a.id_activo === parseInt(value));
+
+  // Filtrar líneas y máquinas (nivel >= 2), buscar por código o nombre
+  const filtrados = activos
+    .filter(a => a.nivel_jerarquia >= 2)
+    .filter(a => {
+      if (!query.trim()) return true;
+      const q = query.toLowerCase();
+      return (
+        a.codigo_activo.toLowerCase().includes(q) ||
+        a.nombre.toLowerCase().includes(q)
+      );
+    })
+    .slice(0, 30);
+
+  const seleccionar = (activo) => {
+    onChange(String(activo.id_activo));
+    setQuery('');
+    setAbierto(false);
+  };
+
+  const limpiar = (e) => {
+    e.stopPropagation();
+    onChange('');
+    setQuery('');
+  };
+
+  return (
+    <div ref={ref} className="relative">
+
+      {/* Muestra el equipo seleccionado o el input de búsqueda */}
+      {seleccionado && !abierto ? (
+        <div
+          onClick={() => setAbierto(true)}
+          className="flex items-center justify-between border border-[#00a651] rounded p-2.5 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors"
+        >
+          <div className="flex flex-col">
+            <span className="font-bold text-[#005026] text-[13px]">{seleccionado.codigo_activo}</span>
+            <span className="text-gray-600 text-[12px]">{seleccionado.nombre}</span>
+          </div>
+          <button type="button" onClick={limpiar} className="text-gray-400 hover:text-red-500 ml-2 font-bold text-[16px] leading-none">
+            ×
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center border border-gray-300 rounded focus-within:border-[#00a651] bg-white">
+          <SearchIcon fontSize="small" className="ml-2 text-gray-400 shrink-0" />
+          <input
+            autoComplete="off"
+            placeholder="Buscar por código o nombre del equipo..."
+            value={query}
+            onChange={e => { setQuery(e.target.value); setAbierto(true); }}
+            onFocus={() => setAbierto(true)}
+            className="flex-1 p-2 outline-none text-[13px] bg-transparent"
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery('')} className="mr-2 text-gray-400 hover:text-red-400 font-bold">×</button>
+          )}
+        </div>
+      )}
+
+      {/* Dropdown de resultados */}
+      {abierto && (
+        <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-b shadow-xl mt-0.5 max-h-64 overflow-y-auto">
+          {filtrados.length === 0 ? (
+            <div className="p-4 text-gray-400 text-[12px] text-center italic">
+              Sin resultados para "{query}"
+            </div>
+          ) : (
+            <>
+              <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b bg-gray-50">
+                {query ? `${filtrados.length} resultado(s)` : 'Todos los equipos — escribe para filtrar'}
+              </div>
+              {filtrados.map(a => (
+                <div
+                  key={a.id_activo}
+                  onClick={() => seleccionar(a)}
+                  className="px-3 py-2.5 hover:bg-[#f0f9f4] cursor-pointer border-b border-gray-50 last:border-0 flex items-start gap-2"
+                >
+                  {/* Indentación visual según jerarquía */}
+                  <div style={{ paddingLeft: `${(a.nivel_jerarquia - 2) * 12}px` }} className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[#0a66c2] text-[13px]">{a.codigo_activo}</span>
+                      {a.criticidad === 'A' && (
+                        <span className="text-[9px] font-bold bg-red-100 text-red-600 border border-red-200 px-1 rounded">CRÍTICO</span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-gray-600 truncate">{a.nombre}</div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const PRIORIDADES = ['Crítica', 'Alta', 'Media', 'Baja'];
 
@@ -262,25 +375,23 @@ export default function Solicitudes() {
 
             <form onSubmit={handleSubmitAviso} className="p-5 flex flex-col gap-4 text-[13px] text-gray-700">
 
-              {/* Activo */}
+              {/* Activo — buscador inteligente */}
               <div className="flex flex-col gap-1">
                 <label className="font-bold">Equipo / Activo afectado *</label>
-                <select
+                <BuscadorEquipo
+                  activos={activos}
+                  value={form.id_activo}
+                  onChange={v => setForm(f => ({ ...f, id_activo: v }))}
+                />
+                {/* Campo oculto para validación required del form */}
+                <input
+                  type="text"
                   required
                   value={form.id_activo}
-                  onChange={e => setForm(f => ({ ...f, id_activo: e.target.value }))}
-                  className="border border-gray-300 p-2 rounded outline-none focus:border-[#00a651] bg-white"
-                >
-                  <option value="">— Seleccionar equipo —</option>
-                  {activos
-                    .filter(a => a.nivel_jerarquia >= 2)
-                    .sort((a, b) => a.codigo_activo.localeCompare(b.codigo_activo))
-                    .map(a => (
-                      <option key={a.id_activo} value={a.id_activo}>
-                        {a.codigo_activo} — {a.nombre}
-                      </option>
-                    ))}
-                </select>
+                  onChange={() => {}}
+                  className="sr-only"
+                  tabIndex={-1}
+                />
               </div>
 
               {/* Descripción */}
