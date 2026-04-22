@@ -1,0 +1,29 @@
+# ── Python ───────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# ── Variables de entorno (contienen credenciales) ─
+.env
+*.env
+
+# ── Base de datos local de demo ───────────────────
+*.db
+*.sqlite3
+
+# ── Node / Frontend ───────────────────────────────
+node_modules/
+dist/
+.vite/
+
+# ── IDEs ─────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS ───────────────────────────────────────────
+.DS_Store
+Thumbs.db

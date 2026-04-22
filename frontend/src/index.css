@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* ============================================================
+   SISTEMA DE DISEÑO — Tokens corporativos Zaimella
+   Usa estos tokens en lugar de valores hex directos.
+   Ejemplos: bg-brand, text-brand-dark, border-ui, bg-surface-sidebar
+   ============================================================ */
+@theme {
+  /* --- Colores de marca --- */
+  --color-brand:       #00a651;
+  --color-brand-dark:  #008c44;
+  --color-brand-light: #eefaf3;
+
+  /* --- Fondos de superficie --- */
+  --color-surface:         #f0f4f7;
+  --color-surface-sidebar: #f4f5f6;
+  --color-surface-card:    #ffffff;
+  --color-surface-muted:   #fbfcfc;
+  --color-surface-input:   #f4f6f8;
+
+  /* --- Bordes y separadores --- */
+  --color-ui:        #d3d9df;
+  --color-ui-active: #e9ecef;
+
+  /* --- Texto --- */
+  --color-ink:      #333333;
+  --color-ink-soft: #444444;
+
+  /* --- Acento oscuro (cabeceras de modal dark) --- */
+  --color-dark-header: #051C2C;
+
+  /* --- Tipografía --- */
+  --font-sans: 'Roboto', 'Inter', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}

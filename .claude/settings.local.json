@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv/Scripts/python.exe seed_demo.py)",
+      "Bash(venv/Scripts/python.exe -c ':*)"
+    ]
+  }
+}

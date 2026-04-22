@@ -1,0 +1,9 @@
+fastapi[standard]
+sqlalchemy
+oracledb
+pydantic
+pydantic-settings
+pyjwt
+passlib[bcrypt]
+cors
+python-dotenv
