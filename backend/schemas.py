@@ -149,6 +149,12 @@ class OrdenTrabajo(BaseModel):
     checklist: List[ChecklistOT] = []
     model_config = ConfigDict(from_attributes=True)
 
+class SolicitudCreate(BaseModel):
+    id_activo: int
+    descripcion_falla: str
+    prioridad_sugerida: str = 'Media'   # Crítica / Alta / Media / Baja
+    reportado_por: str
+
 class Solicitud(BaseModel):
     id_solicitud: int
     id_activo: int

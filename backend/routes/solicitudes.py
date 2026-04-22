@@ -17,6 +17,16 @@ def read_solicitudes(db: Session = Depends(get_db)):
     return solicitudes_service.read_solicitudes(db=db)
 
 
+@router.post("/", response_model=schemas.Solicitud)
+def create_solicitud(data: schemas.SolicitudCreate, db: Session = Depends(get_db)):
+    return solicitudes_service.create_solicitud(db=db, data=data)
+
+
 @router.post("/aprobar/{id_solicitud}")
 def aprobar_solicitud(id_solicitud: int, db: Session = Depends(get_db)):
     return solicitudes_service.aprobar_solicitud(db=db, id_solicitud=id_solicitud)
+
+
+@router.post("/rechazar/{id_solicitud}")
+def rechazar_solicitud(id_solicitud: int, db: Session = Depends(get_db)):
+    return solicitudes_service.rechazar_solicitud(db=db, id_solicitud=id_solicitud)
