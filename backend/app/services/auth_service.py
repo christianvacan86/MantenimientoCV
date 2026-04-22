@@ -3,7 +3,7 @@ from sqlalchemy import text
 
 from app.config import settings
 
-CODIGOMODULO = 'MTTO'
+CODIGOMODULO = settings.module_code
 
 # Permisos de demostración: solo activos cuando USE_SQLITE_DEMO=true
 DEMO_PERMISSIONS = {

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import config from '../config/app.config';
 
 const AuthContext = createContext(null);
 
@@ -13,7 +14,7 @@ export function AuthProvider({ children }) {
     user:        null,
     nombre:      null,
     permissions: {},
-    authError:   null,   // mensaje de error específico del backend
+    authError:   null,
   });
 
   useEffect(() => {
@@ -39,10 +40,9 @@ export function AuthProvider({ children }) {
     const query = new URLSearchParams({ session_id: sess });
     if (usr) query.set('usr', usr);
 
-    fetch(`http://localhost:8000/api/auth/verify?${query}`)
+    fetch(`${config.apiBase}/api/auth/verify?${query}`)
       .then(async r => {
         if (r.ok) return r.json();
-        // Capturar el mensaje de error específico del backend
         const body = await r.json().catch(() => ({}));
         const err  = new Error(body.detail || 'Error de autenticación');
         err.status = r.status;
@@ -56,7 +56,6 @@ export function AuthProvider({ children }) {
         authError:   null,
       }))
       .catch(err => {
-        // Limpiar sessionStorage si la sesión fue rechazada por el servidor
         if (err.status === 401 || err.status === 403) {
           sessionStorage.removeItem('zml_sess');
           sessionStorage.removeItem('zml_usr');
@@ -86,7 +85,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     sessionStorage.removeItem('zml_sess');
     sessionStorage.removeItem('zml_usr');
-    window.location.href = 'http://sistemas.zaimella.com:8090/apex/f?p=100:9999';
+    window.location.href = config.portalUrl;
   };
 
   return (

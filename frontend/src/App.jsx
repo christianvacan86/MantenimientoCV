@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import config from './config/app.config';
 
 import Dashboard          from './pages/Dashboard';
 import Activos            from './pages/Activos';
@@ -109,7 +110,7 @@ function Layout() {
             <MenuIcon fontSize="small" />
           </button>
           <Link to="/" className="text-white font-normal text-[17px] tracking-wide flex items-center gap-2">
-            Mantenimiento Zaimella
+            {config.appName}
           </Link>
         </div>
 
